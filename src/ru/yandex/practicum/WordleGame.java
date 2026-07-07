@@ -81,7 +81,11 @@ public class WordleGame {
         return inputWord.getLast();
     }
 
-    public void makeMove(String word) throws WordInvalidLength, WordNotFoundInDictionary, ExitGame {
+    public void makeMove(String word) throws WordInvalidLength, WordNotFoundInDictionary, ExitGame, GameOver {
+        if (gameOver()) {
+            throw new GameOver("Игра окончена!");
+        }
+
         if ("exit".equals(word)) {
             throw new ExitGame();
         }

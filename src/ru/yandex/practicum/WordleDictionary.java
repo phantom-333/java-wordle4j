@@ -85,8 +85,12 @@ public class WordleDictionary {
             boolean isEqual = true;
             int charNum = 0;
             while (isEqual && charNum < source.length()) {
+                // проверка слова на соответствие маске, где * означает любой символ, а буква в маске -
+                // обязательное соответствие символа у проверяемого слова в заданной позиции
                 isEqual = mask.charAt(charNum) == '*' || source.charAt(charNum) == mask.charAt(charNum);
                 if (isEqual) {
+                    // проверка на наличие в слове 'обязательных' букв из списка. Если в проверяемом
+                    // слове есть все обязательные буквы из списка, тогда переходим к следующему этапу проверки
                     for (Character existChar : existChars) {
                         if (!source.contains(existChar.toString())) {
                             isEqual = false;
@@ -95,6 +99,8 @@ public class WordleDictionary {
                     }
                 }
                 if (isEqual) {
+                    // проверка на отсутствие в слове 'запрещенных' букв из списка, если в проверяемом
+                    // слове есть любая запрещенная буква из списка, тогда выдаем результат false
                     for (Character nonExistChar : nonExistChars) {
                         if (source.charAt(charNum) == (char)nonExistChar) {
                             isEqual = false;

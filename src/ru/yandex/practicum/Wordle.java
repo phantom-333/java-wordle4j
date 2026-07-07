@@ -68,6 +68,9 @@ public class Wordle {
                         } catch (WordInvalidLength | WordNotFoundInDictionary e) {
                             System.out.println("Ошибка ввода слова: " + e.getMessage());
                             pwLog.printf("%sОшибка ввода слова: %s\n", GetTime.now(), e.getMessage());
+                        } catch (GameOver e) {
+                            pwLog.printf("%sОшибка: %s\n", GetTime.now(), e.getMessage());
+                            break;
                         }
                     }
                     if (wordleGame.gameOver() && !wordleGame.winGame()) {

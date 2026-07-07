@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 class WordleTest {
@@ -23,6 +24,8 @@ class WordleTest {
             WordleDictionaryLoader wordleDictionaryLoader = new WordleDictionaryLoader(pwLog, dictionaryFileName);
             wordleDictionary = wordleDictionaryLoader.load(wordLength);
         } catch (Exception e) {
+            fail("Инициализация классов wordleDictionary и wordleDictionaryLoader " +
+                    "или загрузка словаря завершились аварийно");
             throw new RuntimeException(e);
         }
     }
@@ -135,6 +138,88 @@ class WordleTest {
         //добавим в фильтр существующий символ 'у' - список в словаре должен сократиться до [учеба]
         wordleDictionary.filter(mask, existChar2, new LinkedHashSet<Character>());
         assertTrue(wordleDictionary.isExist("учеба"),"Метод фильтрации словаря работает некорректно");
+    }
+
+    @Test
+    public void WordleGameWordInvalidLengthTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        assertThrows(WordInvalidLength.class, () -> {wordleGame.makeMove("слонопотам");},
+                "Вызов исключения WordInvalidLength по превышению длины слова реализовано некорректно");
+    }
+
+    @Test
+    public void WordleGameWordNotFoundInDictionaryTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        assertThrows(WordNotFoundInDictionary.class, () -> {wordleGame.makeMove("абвгд");},
+                "Вызов исключения WordNotFoundInDictionary по отсутствию слова в словаре реализовано некорректно");
+    }
+
+    @Test
+    public void WordleGameExitTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        assertThrows(ExitGame.class, () -> {wordleGame.makeMove("exit");}, "Прерывание игры реализовано некорректно");
+    }
+
+    @Test
+    public void WordleGameStepsCountTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        assertFalse(wordleGame.gameOver(), "Игровая логика реализована неверно");
+        assertEquals(3, wordleGame.getRemainingSteps(), "Подсчет ходов в классе WordleGame реализовано некорректно");
+
+        wordleGame.makeMove("");
+        assertEquals(2, wordleGame.getRemainingSteps(), "Подсчет ходов в классе WordleGame реализовано некорректно");
+
+        wordleGame.makeMove("");
+        assertEquals(1, wordleGame.getRemainingSteps(), "Подсчет ходов в классе WordleGame реализовано некорректно");
+
+        wordleGame.makeMove("");
+        assertEquals(0, wordleGame.getRemainingSteps(), "Подсчет ходов в классе WordleGame реализовано некорректно");
+        assertTrue(wordleGame.gameOver(), "Игровая логика реализована неверно");
+
+        assertThrows(GameOver.class, () -> {wordleGame.makeMove("");}, "Блокировка ходов после завершения игры реализована некорректно");
+    }
+
+    @Test
+    public void WordleGameMakeMoveAndFilterDictionaryTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        int firstDictionaryWordsCount = wordleDictionary.getWordsCount();
+
+        wordleGame.makeMove("");
+        assertTrue(wordleDictionary.getWordsCount() < firstDictionaryWordsCount,
+                "Игровая логика и фильтрация слов в классе WordleGame реализована некорректно");
+    }
+
+    @Test
+    public void WordleGameWinTest() throws Exception {
+        final int steps = 20;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        while (!wordleGame.gameOver() && !wordleGame.winGame()) {
+            wordleGame.makeMove("");
+        }
+
+        assertTrue(wordleGame.winGame(),
+                "Игровая логика в классе WordleGame реализована некорректно - за " + steps +
+                         " шагов компьютер должен подобрать из словаря правильную комбинацию");
+
+        assertEquals(wordleGame.getLastInputWord(), wordleGame.getAnswer(),
+                "Последнее введенное \"правильное\" слово не совпадает с загаданным словом");
     }
 
 }

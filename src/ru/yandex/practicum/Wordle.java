@@ -15,7 +15,6 @@ public class Wordle {
     protected static final String DICTIONARY_FILE_NAME = "words_ru.txt";
     protected static final int WORD_LENGTH = 5;
     protected static final int MAX_STEPS_COUNT = 5;
-    
     protected static Scanner scanner;
     protected static PrintWriter pwLog;
     protected static WordleGame wordleGame;

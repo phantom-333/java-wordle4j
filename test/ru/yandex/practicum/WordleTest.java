@@ -1,7 +1,223 @@
 package ru.yandex.practicum;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import java.io.PrintWriter;
+import java.util.LinkedHashSet;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 class WordleTest {
+    protected static final String DICTIONARY_FILE_NAME = "words_ru.txt";
+    protected static final int WORD_LENGTH = 5;
+    protected static final int WORD_LENGTH_IN_FILE = 67763;
+    protected static PrintWriter pwLog = new PrintWriter(System.out);
+    protected static WordleDictionary wordleDictionary;
+
+    @BeforeEach
+    public void beforeEach() {
+        try {
+            WordleDictionaryLoader wordleDictionaryLoader = new WordleDictionaryLoader(pwLog, DICTIONARY_FILE_NAME);
+            wordleDictionary = wordleDictionaryLoader.load(WORD_LENGTH);
+        } catch (Exception e) {
+            fail("Инициализация классов wordleDictionary и wordleDictionaryLoader " +
+                    "или загрузка словаря завершились аварийно");
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void WordDictionaryLoadTest() {
+        assertEquals(WORD_LENGTH_IN_FILE, wordleDictionary.getWordsCount(),
+                "Количество загруженных строк не совпадает с количеством в файле");
+    }
+
+    @Test
+    public void WordDictionaryNormalizeTest() {
+        assertEquals(WORD_LENGTH_IN_FILE, wordleDictionary.getWordsCount());
+        wordleDictionary.normalizeDictionary();
+        assertTrue(wordleDictionary.getWordsCount() < WORD_LENGTH_IN_FILE,
+                "После нормализации списка количество строк не изменилось");
+    }
+
+    @Test
+    public void WordDictionaryIsExistTest() {
+        wordleDictionary.normalizeDictionary();
+
+        assertTrue(wordleDictionary.isExist("амеба"), "Поиск слова в словаре выполнен некорректно");
+        assertTrue(wordleDictionary.isExist("амёба"), "Поиск слова в словаре выполнен некорректно");
+        assertTrue(wordleDictionary.isExist(" АМЁБА  "), "Поиск слова в словаре выполнен некорректно");
+    }
+
+    @Test
+    public void WordDictionaryCompareMaskTest_withoutExistSymbol() {
+        final String testWord1 = "БАНДА";
+        final String testWord2 = "  бонна   восемь";
+        final String testWord3 = "Бонза";
+        final String mask = "б*Н*а";
+        wordleDictionary.normalizeDictionary();
+
+        assertTrue(wordleDictionary.compareMask(testWord1, mask, new LinkedHashSet<Character>(), new LinkedHashSet<Character>()),
+                "Метод проверки на соответствие слова и маски работает некорректно");
+        assertTrue(wordleDictionary.compareMask(testWord2, mask, new LinkedHashSet<Character>(), new LinkedHashSet<Character>()),
+                "Метод проверки на соответствие слова и маски работает некорректно");
+        assertTrue(wordleDictionary.compareMask(testWord3, mask, new LinkedHashSet<Character>(), new LinkedHashSet<Character>()),
+                "Метод проверки на соответствие слова и маски работает некорректно");
+    }
+
+    @Test
+    public void WordDictionaryCompareMaskTest_withExistSymbol() {
+        LinkedHashSet<Character> existChar = new LinkedHashSet<>();
+        for (char ch : new char[]{'б', 'м', 'а', 'е'}) {
+            existChar.add(ch);
+        }
+        final String testWord = "амеба";
+        final String mask = "**е**";
+        wordleDictionary.normalizeDictionary();
+
+        assertTrue(wordleDictionary.compareMask(testWord, mask, existChar, new LinkedHashSet<Character>()),
+                "Метод проверки на соответствие слова и маски по существующим символам работает некорректно");
+    }
+
+
+    @Test
+    public void WordDictionaryCompareMaskTest_withNonExistSymbol() {
+        LinkedHashSet<Character> nonExistChar1 = new LinkedHashSet<>();
+        for (char ch : new char[]{'о', 'м', 'а', 'е', 'у', 'и', 'ы', 'х', 'ю', 'я'}) {
+            nonExistChar1.add(ch);
+        }
+        LinkedHashSet<Character> nonExistChar2 = new LinkedHashSet<>();
+        for (char ch : new char[]{'о', 'м', 'а', 'е', 'у', 'и', 'ы', 'х', 'ю', 'я', 'б'}) {
+            nonExistChar2.add(ch);
+        }
+
+        final String testWord = "скрэб";
+        final String mask = "*****";
+        wordleDictionary.normalizeDictionary();
+
+        //список отсутствующих символов определяет единственное возможное слово "скрэб"
+        assertTrue(wordleDictionary.compareMask(testWord, mask, new LinkedHashSet<Character>(), nonExistChar1),
+                "Метод проверки на соответствие слова и маски по отсутствующим символам работает некорректно");
+
+        //при добавлении в список любого символа из слова "скрэб", оно должно перестать удовлетворять условиям сравнения
+        assertFalse(wordleDictionary.compareMask(testWord, mask, new LinkedHashSet<Character>(), nonExistChar2),
+                "Метод проверки на соответствие слова и маски по отсутствующим символам работает некорректно");
+    }
+
+    @Test
+    public void WordDictionaryFilterTest() {
+        LinkedHashSet<Character> existChar = new LinkedHashSet<>();
+        for (char ch : new char[]{'б', 'а'}) {
+            existChar.add(ch);
+        }
+        LinkedHashSet<Character> existChar2 = new LinkedHashSet<>();
+        for (char ch : new char[]{'у'}) {
+            existChar2.add(ch);
+        }
+        LinkedHashSet<Character> nonExistChar1 = new LinkedHashSet<>();
+        for (char ch : new char[]{'т'}) {
+            nonExistChar1.add(ch);
+        }
+        final String mask = "**Ё**";
+        wordleDictionary.normalizeDictionary();
+
+        //набор фильтров без исключающих символов соответствует списку [учеба, амеба, треба, ябеда]
+        wordleDictionary.filter(mask, existChar, new LinkedHashSet<Character>());
+        assertEquals(4, wordleDictionary.getWordsCount(),
+                "Метод фильтрации словаря работает некорректно");
+
+        //добавим в исключающий фильтр символ 'т' - список в словаре должен сократиться до [учеба, амеба, ябеда]
+        wordleDictionary.filter(mask, new LinkedHashSet<Character>(), nonExistChar1);
+        assertEquals(3, wordleDictionary.getWordsCount(),
+                "Метод фильтрации словаря работает некорректно");
+
+        //добавим в фильтр существующий символ 'у' - список в словаре должен сократиться до [учеба]
+        wordleDictionary.filter(mask, existChar2, new LinkedHashSet<Character>());
+        assertTrue(wordleDictionary.isExist("учеба"),"Метод фильтрации словаря работает некорректно");
+    }
+
+    @Test
+    public void WordleGameWordInvalidLengthTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        assertThrows(WordInvalidLength.class, () -> {wordleGame.makeMove("слонопотам");},
+                "Вызов исключения WordInvalidLength по превышению длины слова реализовано некорректно");
+    }
+
+    @Test
+    public void WordleGameWordNotFoundInDictionaryTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        assertThrows(WordNotFoundInDictionary.class, () -> {wordleGame.makeMove("абвгд");},
+                "Вызов исключения WordNotFoundInDictionary по отсутствию слова в словаре реализовано некорректно");
+    }
+
+    @Test
+    public void WordleGameExitTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        assertThrows(ExitGame.class, () -> {wordleGame.makeMove("exit");}, "Прерывание игры реализовано некорректно");
+    }
+
+    @Test
+    public void WordleGameStepsCountTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        assertFalse(wordleGame.gameOver(), "Игровая логика реализована неверно");
+        assertEquals(3, wordleGame.getRemainingSteps(), "Подсчет ходов в классе WordleGame реализовано некорректно");
+
+        wordleGame.makeMove("");
+        assertEquals(2, wordleGame.getRemainingSteps(), "Подсчет ходов в классе WordleGame реализовано некорректно");
+
+        wordleGame.makeMove("");
+        assertEquals(1, wordleGame.getRemainingSteps(), "Подсчет ходов в классе WordleGame реализовано некорректно");
+
+        wordleGame.makeMove("");
+        assertEquals(0, wordleGame.getRemainingSteps(), "Подсчет ходов в классе WordleGame реализовано некорректно");
+        assertTrue(wordleGame.gameOver(), "Игровая логика реализована неверно");
+
+        assertThrows(GameOver.class, () -> {wordleGame.makeMove("");}, "Блокировка ходов после завершения игры реализована некорректно");
+    }
+
+    @Test
+    public void WordleGameMakeMoveAndFilterDictionaryTest() throws Exception {
+        final int steps = 3;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        int firstDictionaryWordsCount = wordleDictionary.getWordsCount();
+
+        wordleGame.makeMove("");
+        assertTrue(wordleDictionary.getWordsCount() < firstDictionaryWordsCount,
+                "Игровая логика и фильтрация слов в классе WordleGame реализована некорректно");
+    }
+
+    @Test
+    public void WordleGameWinTest() throws Exception {
+        final int steps = 20;
+        wordleDictionary.normalizeDictionary();
+        WordleGame wordleGame = new WordleGame(pwLog, wordleDictionary, steps);
+
+        while (!wordleGame.gameOver() && !wordleGame.winGame()) {
+            wordleGame.makeMove("");
+        }
+
+        assertTrue(wordleGame.winGame(),
+                "Игровая логика в классе WordleGame реализована некорректно - за " + steps +
+                         " шагов компьютер должен подобрать из словаря правильную комбинацию");
+
+        assertEquals(wordleGame.getLastInputWord(), wordleGame.getAnswer(),
+                "Последнее введенное \"правильное\" слово не совпадает с загаданным словом");
+    }
 
 }

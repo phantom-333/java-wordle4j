@@ -9,29 +9,21 @@ import java.nio.file.Paths;
 import java.util.Scanner;
 
 
-/*
-в главном классе нам нужно:
-    создать лог-файл (он должен передаваться во все классы)
-    создать загрузчик словарей WordleDictionaryLoader
-    загрузить словарь WordleDictionary с помощью класса WordleDictionaryLoader
-    затем создать игру WordleGame и передать ей словарь
-    вызвать игровой метод в котором в цикле опрашивать пользователя и передавать информацию в игру
-    вывести состояние игры и конечный результат
- */
 public class Wordle {
 
+    protected static final String LOG_FILE_NAME = "wordle.log";
+    protected static final String DICTIONARY_FILE_NAME = "words_ru.txt";
+    protected static final int WORD_LENGTH = 5;
+    protected static final int MAX_STEPS_COUNT = 5;
+    
     protected static Scanner scanner;
-    protected static final String logFileName = "wordle.log";
-    protected static final String dictionaryFileName = "words_ru.txt";
     protected static PrintWriter pwLog;
-    protected static final int wordLength = 5;
-    protected static final int maxStepsCount = 5;
     protected static WordleGame wordleGame;
 
     public static void main(String[] args) {
         scanner = new Scanner(System.in);
         try {
-            Path logFile = Paths.get(logFileName);
+            Path logFile = Paths.get(LOG_FILE_NAME);
             if (!Files.exists(logFile)) {
                 try {
                     Files.createFile(logFile);
@@ -39,17 +31,17 @@ public class Wordle {
                     throw new LogFileException(e);
                 }
             }
-            try (FileWriter fileWriter = new FileWriter(logFileName)) {
+            try (FileWriter fileWriter = new FileWriter(LOG_FILE_NAME)) {
                 pwLog = new PrintWriter(fileWriter);
                 pwLog.println(GetTime.now() + "запуск игры");
 
                 try {
                     //подготовка словарей
-                    WordleDictionaryLoader wordleDictionaryLoader = new WordleDictionaryLoader(pwLog, dictionaryFileName);
-                    WordleDictionary wordleDictionary = wordleDictionaryLoader.load(wordLength);
+                    WordleDictionaryLoader wordleDictionaryLoader = new WordleDictionaryLoader(pwLog, DICTIONARY_FILE_NAME);
+                    WordleDictionary wordleDictionary = wordleDictionaryLoader.load(WORD_LENGTH);
                     wordleDictionary.normalizeDictionary();
 
-                    wordleGame = new WordleGame(pwLog, wordleDictionary, maxStepsCount);
+                    wordleGame = new WordleGame(pwLog, wordleDictionary, MAX_STEPS_COUNT);
                     printMenu();
                     //цикл игры запускается отсюда
                     while (!wordleGame.gameOver() && !wordleGame.winGame()) {
@@ -76,7 +68,7 @@ public class Wordle {
                     if (wordleGame.gameOver() && !wordleGame.winGame()) {
                         System.out.printf("К сожалению, количество попыток закончилось.\n" +
                                 "Было загадано слово '%s', попробуйте сыграть еще раз!\n", wordleGame.getAnswer());
-                        pwLog.printf("%sИгрок не смог разгадать слово за %d попыток\n", GetTime.now(), maxStepsCount);
+                        pwLog.printf("%sИгрок не смог разгадать слово за %d попыток\n", GetTime.now(), MAX_STEPS_COUNT);
                     }
                 } catch (Exception e) {
                     pwLog.println(GetTime.now() + e.getMessage());
@@ -97,7 +89,7 @@ public class Wordle {
 
     static void printMenu() {
         System.out.println("╔" + "═".repeat(102) + "╗");
-        System.out.printf("║ Загадано слово из %d букв, вам дается %d попыток его разгадать.%40s║\n", wordLength, maxStepsCount, " ");
+        System.out.printf("║ Загадано слово из %d букв, вам дается %d попыток его разгадать.%40s║\n", WORD_LENGTH, MAX_STEPS_COUNT, " ");
         System.out.println("║ Правила игры: после ввода слова на строке ниже выводится подсказка, в которой правильные буквы       ║");
         System.out.println("║ отображаются на своем месте, а символом '-' отмечается буква, которой НЕТ в загаданном слове;        ║");
         System.out.println("║ символом '^' отмечается буква, которая ЕСТЬ в загаданном слове, но находится в другом месте.         ║");

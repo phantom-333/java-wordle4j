@@ -10,17 +10,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 class WordleTest {
-    protected static final String dictionaryFileName = "words_ru.txt";
+    protected static final String DICTIONARY_FILE_NAME = "words_ru.txt";
+    protected static final int WORD_LENGTH = 5;
+    protected static final int WORD_LENGTH_IN_FILE = 67763;
     protected static PrintWriter pwLog = new PrintWriter(System.out);
-    protected static final int wordLength = 5;
-    protected static final int wordLengthInFile = 67763;
     protected static WordleDictionary wordleDictionary;
 
     @BeforeEach
     public void beforeEach() {
         try {
-            WordleDictionaryLoader wordleDictionaryLoader = new WordleDictionaryLoader(pwLog, dictionaryFileName);
-            wordleDictionary = wordleDictionaryLoader.load(wordLength);
+            WordleDictionaryLoader wordleDictionaryLoader = new WordleDictionaryLoader(pwLog, DICTIONARY_FILE_NAME);
+            wordleDictionary = wordleDictionaryLoader.load(WORD_LENGTH);
         } catch (Exception e) {
             fail("Инициализация классов wordleDictionary и wordleDictionaryLoader " +
                     "или загрузка словаря завершились аварийно");
@@ -30,15 +30,15 @@ class WordleTest {
 
     @Test
     public void WordDictionaryLoadTest() {
-        assertEquals(wordLengthInFile, wordleDictionary.getWordsCount(),
+        assertEquals(WORD_LENGTH_IN_FILE, wordleDictionary.getWordsCount(),
                 "Количество загруженных строк не совпадает с количеством в файле");
     }
 
     @Test
     public void WordDictionaryNormalizeTest() {
-        assertEquals(wordLengthInFile, wordleDictionary.getWordsCount());
+        assertEquals(WORD_LENGTH_IN_FILE, wordleDictionary.getWordsCount());
         wordleDictionary.normalizeDictionary();
-        assertTrue(wordleDictionary.getWordsCount() < wordLengthInFile,
+        assertTrue(wordleDictionary.getWordsCount() < WORD_LENGTH_IN_FILE,
                 "После нормализации списка количество строк не изменилось");
     }
 
